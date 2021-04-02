@@ -2,6 +2,7 @@ package aptech.fpt.spring.controller;
 
 import aptech.fpt.spring.entity.Product;
 import aptech.fpt.spring.entity.ProductValidator;
+import aptech.fpt.spring.filehandle.UploadController;
 import aptech.fpt.spring.model.ProductModel;
 import aptech.fpt.spring.model.ProductModel2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,6 @@ import java.util.Optional;
 @Controller
 public class ProductController {
 
-    private static String UPLOADED_FOLDER = "target/classes/static/uploaded/";
-
     @Autowired
     private ProductModel productModel;
     @Autowired
@@ -36,7 +35,7 @@ public class ProductController {
         return "product-form";
     }
 
-    @RequestMapping(path = "/product/create", method = RequestMethod.POST)
+    @RequestMapping(path = "/product/save", method = RequestMethod.POST)
     public String saveProduct(@Valid Product product, BindingResult result,
                               @RequestParam("myFile") MultipartFile myFile) {
         product.setImgUrl("_");
@@ -45,6 +44,7 @@ public class ProductController {
             return "product-form";
         }
         try {
+            String UPLOADED_FOLDER = UploadController.UPLOADED_FOLDER;
             Path path = Paths.get(UPLOADED_FOLDER + myFile.getOriginalFilename());
             Files.write(path, myFile.getBytes());
         } catch (IOException ex) {
@@ -55,30 +55,12 @@ public class ProductController {
         return "redirect:/product/list";
     }
 
-    @RequestMapping(path = "/product/edit/{id}", method = RequestMethod.GET)
-    public String editProduct(@PathVariable int id, Model model) {
-        Optional<Product> optionalProduct = productModel.findById(id);
-        if (optionalProduct.isPresent()) {
-            model.addAttribute("product", optionalProduct.get());
-            return "product-form";
-        } else {
-            return "not-found";
+        @RequestMapping(value = "/product/edit",method = RequestMethod.GET)
+        public String editProduct(@RequestParam("id") int id,Model model){
+            Optional<Product> productEdit = productModel.findById(id);
+            productEdit.ifPresent(product -> model.addAttribute("product",product));
+            return "product-form-edit";
         }
-    }
-
-//    @RequestMapping(path = "/product/edit/{id}", method = RequestMethod.POST)
-//    public String updateProduct(@PathVariable int id,@Valid Product product, BindingResult result, Model model){
-//        Optional<Product> optionalProduct = productModel.findById(id);
-//        if (optionalProduct.isPresent()) {
-//            if (result.hasErrors()) {
-//                return "product-form";
-//            }
-//            productModel.save(product);
-//            return "redirect:/product/list";
-//        } else {
-//            return "not-found";
-//        }
-//    }
 
     @RequestMapping(path = "/product/delete/{id}", method = RequestMethod.POST)
     public String deleteProduct(@PathVariable int id) {
